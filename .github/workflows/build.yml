@@ -1,0 +1,41 @@
+name: Build Android APK
+on:
+  push:
+    branches: [ main, master ]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup Updated Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Extract Project Files
+        run: |
+          if [ -f "my-game.zip" ]; then
+            unzip my-game.zip
+          elif [ -f "source_tar.gz" ]; then
+            tar -xzvf source_tar.gz
+          elif [ -f "source_tar" ]; then
+            tar -xvf source_tar
+          else
+            echo "No packed archive found."
+          fi
+
+      - name: Install Mobile Tools Globally
+        run: npm install -g eas-cli expo-cli
+
+      - name: Force Clean Expo Dependencies Setup
+        run: |
+          rm -rf node_modules package-lock.json
+          npm install react-native-google-mobile-ads
+          npx expo install --fix
+
+      - name: Execute Expo Cloud Build
+        run: npx eas-cli build --platform android --profile preview --non-interactive
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
